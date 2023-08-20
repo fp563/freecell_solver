@@ -17,6 +17,28 @@ SAMPLE_TABLEAU = [
     [('J','C'),('K','D'),('9','H'),('4','S'),('Q','D'),('10','H')],
 ]
 
+INITIAL_BOARL_SAMPLE = {
+        'freecells': [],
+        'home_cells': [[], [], [], []],
+        'tableau': SAMPLE_TABLEAU,
+    }
+
+TEST_BOARD = {
+        'freecells': [('6','D'),('2','D'),('3','D'),('4','D')],
+        'home_cells': [[('1','H'),('2','H'),('3','H')],[],[('1','C'),('2','C'),('3','C'),('4','C'),('5','C'),('6','C')], []],
+        'tableau': [
+            [],
+            [('8','C'),('10','C'),('9','D')],
+            [('Q','H'),('5','S'),('J','D'),('10','D')],
+            [('J','S'),('5','H'),('8','D'),('10','S'),('3','S'),('7','D')],
+            [('8','S'),('A','S'),('2','S'),('K','H'),('K','S')],
+            [('A','D'),('7','C'),('K','C'),('Q','S')],
+            [('4','H'),('Q','C'),('9','S'),('J','H'),('7','H'),('6','S'),('5','D')],
+            [('J','C'),('K','D'),('9','H'),('4','S'),('Q','D'),('10','H'),('9','C'),('8','H'),('7','S'),('6','H')],
+        ],
+    }
+
+
 def is_valid_sequence(cards):
     """
     Check if the given list of cards form a valid descending sequence of alternating colors.
@@ -288,18 +310,18 @@ def get_possible_moves(board):
         new_board = move_tableau_to_freecell(board, i)
         if new_board != board:
             card = board['tableau'][i][-1]
-            moves.append((new_board, f"Move {card[0]}{card[1]} from tableau {i} to freecell"))
+            moves.append((new_board, f"Move {card[0]}{card[1]} from tableau {i} to free cell"))
 
     for i, card in enumerate(board['freecells']):
         for j in range(8):
             new_board = move_freecell_to_tableau(board, i, j)
             if new_board != board:
-                moves.append((new_board, f"Move {card[0]}{card[1]} from freecell to tableau {j}"))
+                moves.append((new_board, f"Move {card[0]}{card[1]} from free cell to tableau {j}"))
 
     for i, card in enumerate(board['freecells']):
         new_board = move_freecell_to_homecell(board, i)
         if new_board != board:
-            moves.append((new_board, f"Move {card[0]}{card[1]} from freecell to home cell"))
+            moves.append((new_board, f"Move {card[0]}{card[1]} from free cell to home cell"))
 
     return moves
 
@@ -347,9 +369,63 @@ def heuristic(board):
             - free_spaces * 2
             - empty_tableau_cols)
 
+def string_to_card(str):
+    if len(str)==3:
+        return (str[0:2],str[2])
+    else:
+        return (str[0],str[1])
 
 
-def a_star_search_improved(initial_board):
+def print_board_state_after_each_move(initial_board, solution_moves):
+    """
+    Prints the board state after applying each move in the solution_moves list.
+    """
+    current_board = deepcopy(initial_board)
+
+    print("Initial board state:")
+    print({
+        'freecells': current_board['freecells'],
+        'home_cells': current_board['home_cells'],
+        'tableau': current_board['tableau']
+    })
+    print("\n")
+
+    for move in solution_moves:
+        # Split the move description to extract move details
+        move_parts = move.split()
+        move_type_from = move_parts[-5]
+        move_type_to = move_parts[-2]
+
+        if move_type_from == "tableau":
+            if move_type_to == "tableau":
+                from_index = int(move_parts[-4])
+                to_index = int(move_parts[-1])
+                num_cards = int(move_parts[1])
+                current_board = move_tableau_to_tableau(current_board, from_index, to_index, num_cards)
+            elif move_type_to == "free":
+                index = int(move_parts[-4])
+                current_board = move_tableau_to_freecell(current_board, index)
+            elif move_type_to == "home":
+                index = int(move_parts[-4])
+                current_board = move_tableau_to_homecell(current_board, index)
+        elif move_type_from == "free":
+            if move_type_to == "tableau":
+                tableau_index = int(move_parts[-1])
+                freecell_card = string_to_card(move_parts[1])
+                freecell_index = current_board['freecells'].index(freecell_card)
+
+                current_board = move_freecell_to_tableau(current_board, freecell_index, tableau_index)
+            elif move_type_to == "home":
+                current_board = move_freecell_to_homecell(current_board, index)
+
+        print(f"After move: {move}")
+        print({
+            'freecells': current_board['freecells'],
+            'home_cells': current_board['home_cells'],
+            'tableau': current_board['tableau']
+        })
+        print("\n")
+
     """
     Find a solution for the given FreeCell board using A* search with improved heuristic.
     """
@@ -372,6 +448,7 @@ def a_star_search_improved(initial_board):
 
         # Check if the current board state is a goal state (all cards are in the home cells)
         if all(len(cell) == 13 for cell in current_board['home_cells']):
+            print_board_state_after_each_move(initial_board, moves)
             return moves  # We found a solution
 
         # Expand the current board state by trying all possible moves
@@ -388,10 +465,6 @@ def a_star_search_improved(initial_board):
 if __name__ == "__main__":
     # 初期状態のフリーセルを設定
     # 例: {'freecells': [], 'home_cells': [[], [], [], []], 'tableau': [[('10', 'H'), ('9', 'D'), ...], [...], [...], [...]]}
-    initial_board = {
-        'freecells': [],
-        'home_cells': [[], [], [], []],
-        'tableau': SAMPLE_TABLEAU,
-    }
+    initial_board = TEST_BOARD
     solution_moves_improved = a_star_search_improved(initial_board)
     print(solution_moves_improved)
