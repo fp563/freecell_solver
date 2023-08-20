@@ -426,6 +426,7 @@ def print_board_state_after_each_move(initial_board, solution_moves):
         })
         print("\n")
 
+def a_star_search_improved(initial_board):
     """
     Find a solution for the given FreeCell board using A* search with improved heuristic.
     """
