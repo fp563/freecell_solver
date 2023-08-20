@@ -32,7 +32,7 @@ def is_valid_sequence(cards):
             return False
     return True
 
-def move_tableau_to_tableau_final_v3(board, from_index, to_index, num_cards):
+def move_tableau_to_tableau(board, from_index, to_index, num_cards):
     """
     Move a card (or a sequence of cards) from one tableau to another, ensuring all rules are followed.
     This version ensures the moved sequence is a valid descending sequence of alternating colors.
@@ -65,7 +65,7 @@ def move_tableau_to_tableau_final_v3(board, from_index, to_index, num_cards):
 
     return board
 
-def move_tableau_to_homecell_updated(board, tableau_index):
+def move_tableau_to_homecell(board, tableau_index):
     """
     Move the top card from the specified tableau column to its corresponding homecell.
     Return a new board state if the move is valid, otherwise return the original board.
@@ -230,25 +230,8 @@ def print_board(board):
             row_display.append(f"{col[i][0]:<2}{col[i][1]} " if i < len(col) else "    ")
         print(" ".join(row_display))
 
-def heuristic(board):
-    """
-    Compute a heuristic value for the given board state.
-    Lower values indicate states closer to the goal.
-    """
-    # Number of cards in home_cells (the more the better)
-    home_cells_count = sum(len(cell) for cell in board['home_cells'])
 
-    # Number of free spaces in freecells (the more the better)
-    free_spaces = 4 - len(board['freecells'])
-
-    # Number of empty tableau columns (the more the better)
-    empty_tableau_cols = sum(1 for col in board['tableau'] if not col)
-
-    # Our heuristic is a combination of the above factors
-    # We give more weight to home_cells_count since it directly contributes to the goal
-    return -home_cells_count - 0.5 * free_spaces - 0.5 * empty_tableau_cols
-
-def is_valid_sequence_corrected(cards):
+def is_valid_sequence(cards):
     """
     Check if the given list of cards form a valid descending sequence of alternating colors.
     This corrected version explicitly checks the card sequence and colors.
@@ -272,7 +255,7 @@ def is_valid_sequence_corrected(cards):
 
 
 # Adjusting the get_possible_moves_corrected_v6 function to use the corrected is_valid_sequence function
-def get_possible_moves_corrected_v7(board):
+def get_possible_moves(board):
     """
     Generate all possible next board states from the current board state.
     This version uses the corrected is_valid_sequence function.
@@ -287,16 +270,16 @@ def get_possible_moves_corrected_v7(board):
                     moving_cards = board['tableau'][i][-num_cards:]
                     
                     # Ensure that the cards being moved are in a valid sequence
-                    if not is_valid_sequence_corrected(moving_cards):
+                    if not is_valid_sequence(moving_cards):
                         continue
                     
-                    new_board = move_tableau_to_tableau_final_v3(board, i, j, num_cards)
+                    new_board = move_tableau_to_tableau(board, i, j, num_cards)
                     if new_board != board:
                         moves.append((new_board, f"Move {num_cards} cards from tableau {i} to tableau {j}"))
 
     # Other moves remain the same as before
     for i in range(8):
-        new_board = move_tableau_to_homecell_updated(board, i)
+        new_board = move_tableau_to_homecell(board, i)
         if new_board != board:
             card = board['tableau'][i][-1]
             moves.append((new_board, f"Move {card[0]}{card[1]} from tableau {i} to home cell"))
@@ -320,42 +303,6 @@ def get_possible_moves_corrected_v7(board):
 
     return moves
 
-
-
-def a_star_search_final(initial_board):
-    """
-    Find a solution for the given FreeCell board using A* search.
-    """
-    # Each state in the priority queue is represented as (priority, board_str, board, moves)
-    # Where 'moves' is the sequence of moves to reach the current board state
-    start_state = (heuristic(initial_board), str(initial_board), initial_board, [])
-    frontier = PriorityQueue()
-    frontier.put(start_state)
-
-    explored = set()
-
-    while not frontier.empty():
-        _, _, current_board, moves = frontier.get()
-
-        # Check if we have already explored this board state
-        board_str = str(current_board)
-        if board_str in explored:
-            continue
-        explored.add(board_str)
-
-        # Check if the current board state is a goal state (all cards are in the home cells)
-        if all(len(cell) == 13 for cell in current_board['home_cells']):
-            return moves  # We found a solution
-
-        # Expand the current board state by trying all possible moves
-        for move in get_possible_moves_updated(current_board):
-            new_board, move_description = move
-            new_moves = moves + [move_description]
-            priority = heuristic(new_board) + len(new_moves)  # f = g + h
-            frontier.put((priority, str(new_board), new_board, new_moves))
-
-    return None  # No solution found
-
 def rank_value(rank):
     """Convert card rank to its numeric value for heuristic evaluation."""
     if rank == 'A':
@@ -369,7 +316,7 @@ def rank_value(rank):
     else:
         return int(rank)
 
-def heuristic_updated(board):
+def heuristic(board):
     """
     Compute an improved heuristic value for the given board state.
     """
@@ -408,7 +355,7 @@ def a_star_search_improved(initial_board):
     """
     # Each state in the priority queue is represented as (priority, board_str, board, moves)
     # Where 'moves' is the sequence of moves to reach the current board state
-    start_state = (heuristic_updated(initial_board), str(initial_board), initial_board, [])
+    start_state = (heuristic(initial_board), str(initial_board), initial_board, [])
     frontier = PriorityQueue()
     frontier.put(start_state)
 
@@ -428,10 +375,10 @@ def a_star_search_improved(initial_board):
             return moves  # We found a solution
 
         # Expand the current board state by trying all possible moves
-        for move in get_possible_moves_corrected_v7(current_board):
+        for move in get_possible_moves(current_board):
             new_board, move_description = move
             new_moves = moves + [move_description]
-            priority = heuristic_updated(new_board) + len(new_moves)  # f = g + h
+            priority = heuristic(new_board) + len(new_moves)  # f = g + h
             frontier.put((priority, str(new_board), new_board, new_moves))
 
     return None  # No solution found
@@ -448,6 +395,3 @@ if __name__ == "__main__":
     }
     solution_moves_improved = a_star_search_improved(initial_board)
     print(solution_moves_improved)
-    # print_board(initial_board)  # 初期状態をログとして出力
-    # a_star_search_final(initial_board)
-    # solve_freecell(initial_board)
