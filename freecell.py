@@ -426,7 +426,7 @@ def print_board_state_after_each_move(initial_board, solution_moves):
         })
         print("\n")
 
-def a_star_search_improved(initial_board):
+def a_star_search_improved(initial_board, max_iterations=1000):
     """
     Find a solution for the given FreeCell board using A* search with improved heuristic.
     """
@@ -437,6 +437,8 @@ def a_star_search_improved(initial_board):
     frontier.put(start_state)
 
     explored = set()
+
+    iterations = 0
 
     while not frontier.empty():
         _, _, current_board, moves = frontier.get()
@@ -458,6 +460,10 @@ def a_star_search_improved(initial_board):
             new_moves = moves + [move_description]
             priority = heuristic(new_board) + len(new_moves)  # f = g + h
             frontier.put((priority, str(new_board), new_board, new_moves))
+
+        iterations+=1
+        if max_iterations and iterations >= max_iterations:
+            return None
 
     return None  # No solution found
 
