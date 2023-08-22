@@ -355,12 +355,50 @@ def rank_value(rank):
     else:
         return int(rank)
 
+def count_cards_above_next_home_cards(board):
+    total_count = 0
+    
+    for suit_index, home_cell in enumerate(board['home_cells']):
+        target_card = None
+        if home_cell:
+            target_rank_index = RANKS.index(home_cell[-1][0]) + 1
+            if target_rank_index < 13:
+                target_card = (RANKS[target_rank_index], SUITS[suit_index])
+        else:
+            # If the homecell for the suit is empty, we look for 'A' of that suit
+            target_card = ('A', SUITS[suit_index])
+        
+        if target_card:
+            for col in board['tableau']:
+                if target_card in col:
+                    total_count += len(col) - col.index(target_card) - 1
+                    break
+                    
+    return total_count
+
+def minimum_max_rank_in_homecells(board):
+    """
+    Returns the smallest of the largest ranks among the 4 suits in the home cells.
+    If any of the home cells is empty, returns 0.
+    """
+    max_ranks = []
+    
+    for home_cell in board['home_cells']:
+        if not home_cell:  # If the home cell is empty
+            return 0
+        max_rank = rank_value(home_cell[-1][0])
+        max_ranks.append(max_rank)
+    
+    return min(max_ranks)
+
 def heuristic(board):
     """
     Compute an improved heuristic value for the given board state.
     """
     # Number of cards in home_cells (the more the better)
     home_cells_count = sum(len(cell) for cell in board['home_cells'])
+
+    home_cells_suits = sum(1 if cell else 0 for cell in board['home_cells'])
 
     # Top card rank in home_cells (higher rank is better)
     home_cells_rank = sum(rank_value(cell[-1][0]) if cell else 0 for cell in board['home_cells'])
@@ -371,20 +409,32 @@ def heuristic(board):
     # Number of empty tableau columns (the more the better)
     empty_tableau_cols = sum(1 for col in board['tableau'] if not col)
 
+    king_starting_cols = sum(1 for col in board['tableau'] if col and col[0][0] == 'K')
+
+    penalty_gap_with_next_home = count_cards_above_next_home_cards(board)
+
+    min_homecell_card_rank = minimum_max_rank_in_homecells(board)
+
+
     # Count of continuous sequences in tableau
-    continuous_sequences = 0
+    continuous_sequences_length = 0
     for col in board['tableau']:
-        if len(col) > 1:
-            for i in range(len(col) - 1):
-                if rank_value(col[i][0]) - 1 == rank_value(col[i + 1][0]):
-                    continuous_sequences += 1
+        for length in range(len(col), 1, -1):
+            if is_valid_sequence(col[-length:]):
+                continuous_sequences_length += length
+                break
 
     # Our updated heuristic is a combination of the above factors
-    return (-home_cells_count * 10
-            - home_cells_rank * 5
-            - continuous_sequences * 3
-            - free_spaces * 2
-            - empty_tableau_cols)
+    return (- home_cells_count * 70
+            - home_cells_rank * 2
+            - home_cells_suits * 100
+            - min_homecell_card_rank * 100
+            - continuous_sequences_length * 1
+            - free_spaces * 5
+            - empty_tableau_cols * 10
+            - king_starting_cols * 20
+            + penalty_gap_with_next_home * 5
+            )
 
 def string_to_card(str):
     if len(str)==3:
