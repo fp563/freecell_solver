@@ -486,11 +486,12 @@ def print_board_state_after_each_move(initial_board, solution_moves):
                 current_board = move_freecell_to_homecell(current_board, freecell_index)
 
         print(f"After move: {move}")
-        print({
-            'freecells': current_board['freecells'],
-            'home_cells': current_board['home_cells'],
-            'tableau': current_board['tableau']
-        })
+        # print({
+        #     'freecells': current_board['freecells'],
+        #     'home_cells': current_board['home_cells'],
+        #     'tableau': current_board['tableau']
+        # })
+        print_board(current_board)
         print("\n")
 
 def a_star_search_improved(initial_board, max_iterations=1000):
@@ -509,7 +510,9 @@ def a_star_search_improved(initial_board, max_iterations=1000):
 
     while not frontier.empty():
         _, _, current_board, moves = frontier.get()
-
+        print(f"iteration {iterations} score {heuristic(current_board)}")
+        print_board(current_board)
+        
         # Check if we have already explored this board state
         board_str = str(current_board)
         if board_str in explored:
@@ -519,6 +522,7 @@ def a_star_search_improved(initial_board, max_iterations=1000):
         # Check if the current board state is a goal state (all cards are in the home cells)
         if all(len(cell) == 13 for cell in current_board['home_cells']):
             print_board_state_after_each_move(initial_board, moves)
+            print(f"iteration: {iterations}")
             return moves  # We found a solution
 
         # Expand the current board state by trying all possible moves
@@ -539,6 +543,6 @@ def a_star_search_improved(initial_board, max_iterations=1000):
 if __name__ == "__main__":
     # 初期状態のフリーセルを設定
     # 例: {'freecells': [], 'home_cells': [[], [], [], []], 'tableau': [[('10', 'H'), ('9', 'D'), ...], [...], [...], [...]]}
-    initial_board = TEST_BOARD
+    initial_board = INITIAL_BOARL_SAMPLE
     solution_moves_improved = a_star_search_improved(initial_board)
     print(solution_moves_improved)
