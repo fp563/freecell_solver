@@ -284,11 +284,28 @@ def get_possible_moves(board):
     """
     moves = []
 
+    # Calculate the maximum number of cards that can be moved in a sequence
+    # based on the number of empty freecells and tableau columns.
+    num_empty_freecells = 4 - len(board['freecells'])
+    num_empty_tableau_cols = sum(1 for col in board['tableau'] if not col)
+
+    
+    # For normal moves between non-empty tableau columns
+    max_movable_cards = (num_empty_freecells + 1) * (2 ** num_empty_tableau_cols)
+    # For moving to an empty tableau column
+    max_movable_to_empty_col = (num_empty_freecells + 1) * (2 ** (num_empty_tableau_cols-1))
+
     # Try moving cards between tableau columns
     for i in range(8):
         for j in range(8):
             if i != j:
-                for num_cards in range(1, len(board['tableau'][i]) + 1):
+                # If the destination tableau column is empty
+                if not board['tableau'][j]:
+                    limit = min(len(board['tableau'][i]) + 1, max_movable_to_empty_col + 1)
+                else:
+                    limit = min(len(board['tableau'][i]) + 1, max_movable_cards + 1)
+
+                for num_cards in range(1, limit):
                     moving_cards = board['tableau'][i][-num_cards:]
                     
                     # Ensure that the cards being moved are in a valid sequence
