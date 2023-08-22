@@ -426,14 +426,14 @@ def print_board_state_after_each_move(initial_board, solution_moves):
                 index = int(move_parts[-4])
                 current_board = move_tableau_to_homecell(current_board, index)
         elif move_type_from == "free":
+            freecell_card = string_to_card(move_parts[1])
+            freecell_index = current_board['freecells'].index(freecell_card)
             if move_type_to == "tableau":
                 tableau_index = int(move_parts[-1])
-                freecell_card = string_to_card(move_parts[1])
-                freecell_index = current_board['freecells'].index(freecell_card)
 
                 current_board = move_freecell_to_tableau(current_board, freecell_index, tableau_index)
             elif move_type_to == "home":
-                current_board = move_freecell_to_homecell(current_board, index)
+                current_board = move_freecell_to_homecell(current_board, freecell_index)
 
         print(f"After move: {move}")
         print({
